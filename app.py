@@ -1,28 +1,21 @@
-from flask import Flask, render_template, session
-from database import init_db
-from api import api
+from flask import Flask, send_from_directory, jsonify
+from flask_cors import CORS
 
-# Configure Flask to find templates and static files in the current directory
-app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="")
-app.secret_key = 'your-secure-secret-key'  # Change this for production
-
-# Initialize the database
-init_db()
-
-# Register API blueprint with prefix '/api'
-app.register_blueprint(api, url_prefix='/api')
+app = Flask(__name__, static_folder='.', template_folder='.')
+CORS(app)
 
 @app.route('/')
 def index():
-    """Serve the main Vue.js template."""
-    current_user = None
-    if 'user_id' in session:
-        current_user = {
-            'id': session['user_id'],
-            'username': session.get('username'),
-            'is_admin': session.get('is_admin', False)
-        }
-    return render_template('index.html', currentUser=current_user)
+    return send_from_directory('.', 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('.', filename)
+
+# Example backend API
+@app.route('/api/data', methods=['GET'])
+def get_data():
+    return jsonify({"message": "Hello from Flask!"})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
