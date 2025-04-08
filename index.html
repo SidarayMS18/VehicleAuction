@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vehicle Auction System</title>
+  <!-- Reference local file since everything is in the root -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -44,9 +45,15 @@
         <!-- User Profile (non-admin) -->
         <div v-if="!currentUser.is_admin" class="profile-section">
           <h2>My Profile</h2>
-          <p><strong>Username:</strong> {{ profile.username if profile else '' }}</p>
-          <p><strong>Email:</strong> {{ profile?.email }}</p>
-          <p><strong>Balance:</strong> ${{ profile?.balance }}</p>
+          {% if profile %}
+            <p><strong>Username:</strong> {{ profile.username }}</p>
+            <p><strong>Email:</strong> {{ profile.email }}</p>
+            <p><strong>Balance:</strong> ${{ profile.balance }}</p>
+          {% else %}
+            <p><strong>Username:</strong> Unknown</p>
+            <p><strong>Email:</strong> Unknown</p>
+            <p><strong>Balance:</strong> $0.00</p>
+          {% endif %}
           <button @click="showFundsModal = true">Add Funds</button>
           <section class="bidding-history">
             <h2>Bidding History</h2>
