@@ -1,102 +1,87 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vehicle Auction System</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Auction System</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <header>
-      <h1>Vehicle Auction System</h1>
-      <div id="auth-section">
-        <!-- Vue-controlled authentication section -->
-        <div v-if="!currentUser">
-          <input type="text" v-model="loginData.username" placeholder="Username">
-          <input type="password" v-model="loginData.password" placeholder="Password">
-          <button @click="login">Login</button>
-          <button @click="showRegister = true">Register</button>
-        </div>
-        <div v-else>
-          Welcome, {{ currentUser.username }}!
-          <button @click="logout">Logout</button>
-        </div>
-      </div>
-    </header>
+    <div id="app">
+        <header>
+            <h1>Vehicle Auction System</h1>
+            <div id="auth-section">
+                <div v-if="!currentUser">
+                    <input v-model="loginData.username" placeholder="Username">
+                    <input type="password" v-model="loginData.password" placeholder="Password">
+                    <button @click="login">Login</button>
+                    <button @click="showRegister = true">Register</button>
+                </div>
+                <div v-else>
+                    Welcome, {{ currentUser.username }}!
+                    <button @click="logout">Logout</button>
+                    <button @click="toggleDarkMode">Toggle Dark Mode</button>
+                </div>
+            </div>
+        </header>
 
-    <!-- Vue-controlled registration modal -->
-    <div v-if="showRegister" class="modal">
-      <div class="modal-content">
-        <h2>Register</h2>
-        <input type="text" v-model="registerData.username" placeholder="Username">
-        <input type="password" v-model="registerData.password" placeholder="Password">
-        <input type="email" v-model="registerData.email" placeholder="Email">
-        <button @click="register">Register</button>
-        <button @click="showRegister = false">Cancel</button>
-      </div>
+        <div v-if="showRegister" class="modal">
+            <div class="modal-content">
+                <h2>Register</h2>
+                <input v-model="registerData.username" placeholder="Username">
+                <input type="password" v-model="registerData.password" placeholder="Password">
+                <input v-model="registerData.email" placeholder="Email">
+                <button @click="register">Register</button>
+                <button @click="showRegister = false">Cancel</button>
+            </div>
+        </div>
+
+        <main>
+            <div v-if="currentUser">
+                <div v-if="!currentUser.is_admin" class="profile-section">
+                    <h2>My Profile</h2>
+                    <p>Username: {{ profile.username }}</p>
+                    <p>Email: {{ profile.email }}</p>
+                    <p>Balance: ${{ profile.balance }}</p>
+                    <button @click="showFundsModal = true">Add Funds</button>
+                </div>
+
+                <div v-if="currentUser.is_admin" class="admin-panel">
+                    <h2>Admin Panel</h2>
+                    <div>
+                        <h3>Add Vehicle</h3>
+                        <input v-model="newVehicle.make" placeholder="Make">
+                        <input v-model="newVehicle.model" placeholder="Model">
+                        <input type="number" v-model="newVehicle.year" placeholder="Year">
+                        <input type="number" v-model="newVehicle.mileage" placeholder="Mileage">
+                        <input type="number" v-model="newVehicle.reserve_price" placeholder="Reserve Price">
+                        <input type="datetime-local" v-model="newVehicle.end_time">
+                        <button @click="addVehicle">Add Vehicle</button>
+                    </div>
+                </div>
+
+                <div class="vehicle-list">
+                    <h2>Available Vehicles</h2>
+                    <div v-for="vehicle in formattedVehicles" :key="vehicle.id" class="vehicle-card">
+                        <h3>{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</h3>
+                        <p>Reserve: ${{ vehicle.reserve_price }}</p>
+                        <p>Current Bid: ${{ vehicle.highest_bid || 'None' }}</p>
+                        <p>Ends: {{ vehicle.end_time }}</p>
+                        <div v-if="!currentUser.is_admin">
+                            <input type="number" v-model="bidAmounts[vehicle.id]" placeholder="Bid amount">
+                            <button @click="placeBid(vehicle.id)">Place Bid</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else>
+                <h2>Please login to view auctions</h2>
+            </div>
+        </main>
     </div>
 
-    <main>
-      <div v-if="currentUser">
-        <!-- Notifications rendered by Jinja -->
-        <div class="notifications">
-          <h3>Notifications</h3>
-          {% if notifications %}
-            {% for notification in notifications %}
-              <div class="notification">
-                {{ notification.message }} ({{ notification.time }})
-                <button @click="markNotificationRead({{ notification.id }})">×</button>
-              </div>
-            {% endfor %}
-          {% else %}
-            <p>No notifications.</p>
-          {% endif %}
-        </div>
-
-        <!-- Admin Panel (visible only to admin users) -->
-        <div v-if="currentUser.is_admin" class="admin-panel">
-          <h2>Admin Panel</h2>
-          <div>
-            <h3>Add New Vehicle</h3>
-            <input type="text" v-model="newVehicle.make" placeholder="Make">
-            <input type="text" v-model="newVehicle.model" placeholder="Model">
-            <input type="number" v-model="newVehicle.year" placeholder="Year">
-            <input type="number" v-model="newVehicle.mileage" placeholder="Mileage">
-            <input type="number" v-model="newVehicle.reserve_price" placeholder="Reserve Price">
-            <input type="datetime-local" v-model="newVehicle.end_time">
-            <textarea v-model="newVehicle.description" placeholder="Description"></textarea>
-            <button @click="addVehicle">Add Vehicle</button>
-          </div>
-        </div>
-
-        <!-- Vehicle Listing controlled by Vue (wrapped in raw tags) -->
-        {% raw %}
-        <div class="vehicle-list">
-          <h2>Available Vehicles</h2>
-          <div v-for="vehicle in formattedVehicles" :key="vehicle.id" class="vehicle-card">
-            <h3>{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</h3>
-            <p>Mileage: {{ vehicle.formattedMileage }}</p>
-            <p>Reserve Price: {{ vehicle.formattedPrice }}</p>
-            <p>Current Bid: {{ vehicle.formattedBid }}</p>
-            <p>Auction Ends: {{ vehicle.formattedEndTime }}</p>
-            <div v-if="!currentUser.is_admin">
-              <input type="number" v-model="bidAmounts[vehicle.id]" placeholder="Bid amount">
-              <button @click="placeBid(vehicle.id)">Place Bid</button>
-            </div>
-          </div>
-        </div>
-        {% endraw %}
-      </div>
-      <div v-else>
-        <h2>Please login to view auctions</h2>
-      </div>
-    </main>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
