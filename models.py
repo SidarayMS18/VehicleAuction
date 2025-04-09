@@ -1,3 +1,4 @@
+# models.py
 import sqlite3
 
 class User:
@@ -39,7 +40,7 @@ class User:
 
 class Vehicle:
     def __init__(self, id=None, make=None, model=None, year=None, mileage=None, 
-                 description=None, reserve_price=None, end_time=None, seller_id=None, status='active'):
+                 description=None, reserve_price=None, end_time=None, seller_id=None):
         self.id = id
         self.make = make
         self.model = model
@@ -49,14 +50,13 @@ class Vehicle:
         self.reserve_price = reserve_price
         self.end_time = end_time
         self.seller_id = seller_id
-        self.status = status
     
     @classmethod
     def get_all_active(cls):
         conn = sqlite3.connect('auction.db')
         cursor = conn.cursor()
         cursor.execute('''
-        SELECT * FROM vehicles WHERE datetime(end_time) > datetime('now') AND status='active'
+        SELECT * FROM vehicles WHERE datetime(end_time) > datetime('now')
         ''')
         vehicles = [cls(*row) for row in cursor.fetchall()]
         conn.close()
@@ -79,16 +79,16 @@ class Vehicle:
         if self.id:
             cursor.execute('''
             UPDATE vehicles SET make=?, model=?, year=?, mileage=?, description=?, 
-            reserve_price=?, end_time=?, seller_id=?, status=? WHERE id=?
+            reserve_price=?, end_time=?, seller_id=? WHERE id=?
             ''', (self.make, self.model, self.year, self.mileage, self.description, 
-                 self.reserve_price, self.end_time, self.seller_id, self.status, self.id))
+                 self.reserve_price, self.end_time, self.seller_id, self.id))
         else:
             cursor.execute('''
             INSERT INTO vehicles (make, model, year, mileage, description, 
-            reserve_price, end_time, seller_id, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            reserve_price, end_time, seller_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (self.make, self.model, self.year, self.mileage, self.description,
-                 self.reserve_price, self.end_time, self.seller_id, self.status))
+                 self.reserve_price, self.end_time, self.seller_id))
             self.id = cursor.lastrowid
         conn.commit()
         conn.close()
