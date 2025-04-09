@@ -1,3 +1,4 @@
+# database.py
 import sqlite3
 
 def init_db():
@@ -26,7 +27,6 @@ def init_db():
         reserve_price REAL NOT NULL,
         end_time TEXT NOT NULL,
         seller_id INTEGER NOT NULL,
-        status TEXT DEFAULT 'active',
         FOREIGN KEY (seller_id) REFERENCES users(id)
     )
     ''')
