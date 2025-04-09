@@ -1,18 +1,18 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vehicle Auction System</title>
-  <!-- Reference local file since everything is in the root -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
   <div id="app">
     <header>
       <h1>Vehicle Auction System</h1>
       <div id="auth-section">
-        <!-- Authentication Section -->
+        <!-- Vue-controlled authentication section -->
         <div v-if="!currentUser">
           <input type="text" v-model="loginData.username" placeholder="Username">
           <input type="password" v-model="loginData.password" placeholder="Password">
@@ -22,13 +22,11 @@
         <div v-else>
           Welcome, {{ currentUser.username }}!
           <button @click="logout">Logout</button>
-          <!-- Dark Mode Toggle -->
-          <button @click="toggleDarkMode">Toggle Dark Mode</button>
         </div>
       </div>
     </header>
 
-    <!-- Registration Modal -->
+    <!-- Vue-controlled registration modal -->
     <div v-if="showRegister" class="modal">
       <div class="modal-content">
         <h2>Register</h2>
@@ -42,33 +40,24 @@
 
     <main>
       <div v-if="currentUser">
-        <!-- User Profile (non-admin) -->
-        <div v-if="!currentUser.is_admin" class="profile-section">
-          <h2>My Profile</h2>
-          {% if profile %}
-            <p><strong>Username:</strong> {{ profile.username }}</p>
-            <p><strong>Email:</strong> {{ profile.email }}</p>
-            <p><strong>Balance:</strong> ${{ profile.balance }}</p>
+        <!-- Notifications rendered by Jinja -->
+        <div class="notifications">
+          <h3>Notifications</h3>
+          {% if notifications %}
+            {% for notification in notifications %}
+              <div class="notification">
+                {{ notification.message }} ({{ notification.time }})
+                <button @click="markNotificationRead({{ notification.id }})">×</button>
+              </div>
+            {% endfor %}
           {% else %}
-            <p><strong>Username:</strong> Unknown</p>
-            <p><strong>Email:</strong> Unknown</p>
-            <p><strong>Balance:</strong> $0.00</p>
+            <p>No notifications.</p>
           {% endif %}
-          <button @click="showFundsModal = true">Add Funds</button>
-          <section class="bidding-history">
-            <h2>Bidding History</h2>
-            <ul>
-              <li v-for="bid in userBids" :key="bid.vehicle_id">
-                Vehicle ID: {{ bid.vehicle_id }}, Bid: ${{ bid.amount }}, Placed at: {{ bid.time }}
-              </li>
-            </ul>
-          </section>
         </div>
-        
-        <!-- Admin Panel -->
+
+        <!-- Admin Panel (visible only to admin users) -->
         <div v-if="currentUser.is_admin" class="admin-panel">
           <h2>Admin Panel</h2>
-          <!-- Vehicle Management -->
           <div>
             <h3>Add New Vehicle</h3>
             <input type="text" v-model="newVehicle.make" placeholder="Make">
@@ -80,69 +69,9 @@
             <textarea v-model="newVehicle.description" placeholder="Description"></textarea>
             <button @click="addVehicle">Add Vehicle</button>
           </div>
-          <div>
-            <h3>Edit Vehicle</h3>
-            <input type="number" v-model="editVehicleId" placeholder="Vehicle ID">
-            <button @click="showEditVehicle = true">Edit Vehicle</button>
-            <!-- Edit modal appears if showEditVehicle is true -->
-            <div v-if="showEditVehicle" class="modal">
-              <div class="modal-content">
-                <h2>Edit Vehicle</h2>
-                <input type="text" v-model="editVehicleData.make" placeholder="Make">
-                <input type="text" v-model="editVehicleData.model" placeholder="Model">
-                <input type="number" v-model="editVehicleData.year" placeholder="Year">
-                <input type="number" v-model="editVehicleData.mileage" placeholder="Mileage">
-                <input type="number" v-model="editVehicleData.reserve_price" placeholder="Reserve Price">
-                <input type="datetime-local" v-model="editVehicleData.end_time">
-                <textarea v-model="editVehicleData.description" placeholder="Description"></textarea>
-                <button @click="editVehicle(editVehicleId)">Save Changes</button>
-                <button @click="showEditVehicle = false">Cancel</button>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h3>Mark Vehicle as Sold</h3>
-            <input type="number" v-model="markSoldVehicleId" placeholder="Vehicle ID">
-            <button @click="markVehicleSold">Mark as Sold</button>
-          </div>
-          <div>
-            <h3>Delete Vehicle</h3>
-            <input type="number" v-model="deleteVehicleId" placeholder="Vehicle ID">
-            <button @click="deleteVehicle">Delete Vehicle</button>
-          </div>
-          <!-- User management table (optional) -->
-          <div>
-            <h3>Manage Users</h3>
-            <button @click="loadUsers">Load Users</button>
-            <table v-if="users.length">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Username</th>
-                  <th>Email</th>
-                  <th>Balance</th>
-                  <th>Admin</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="user in users" :key="user.id">
-                  <td>{{ user.id }}</td>
-                  <td>{{ user.username }}</td>
-                  <td>{{ user.email }}</td>
-                  <td>{{ user.balance }}</td>
-                  <td>{{ user.is_admin }}</td>
-                  <td>
-                    <!-- A button to open an edit modal can be added here -->
-                    <button @click="openEditUser(user)">Edit</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </div>
-        
-        <!-- Vehicle Listing (available to all logged in users) -->
+
+        <!-- Vehicle Listing controlled by Vue (wrapped in raw tags) -->
         {% raw %}
         <div class="vehicle-list">
           <h2>Available Vehicles</h2>
@@ -163,14 +92,11 @@
       <div v-else>
         <h2>Please login to view auctions</h2>
       </div>
-      
-      <!-- Optional: Loading spinner -->
-      <div v-if="isLoading" class="spinner"></div>
     </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="script.js"></script>
+  <script src="/static/js/script.js"></script>
 </body>
 </html>
