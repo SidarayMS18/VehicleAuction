@@ -1,10 +1,11 @@
-# database.py
 import sqlite3
+import hashlib
 
 def init_db():
     conn = sqlite3.connect('auction.db')
     cursor = conn.cursor()
     
+    # Create tables
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -13,8 +14,7 @@ def init_db():
         email TEXT UNIQUE NOT NULL,
         balance REAL DEFAULT 0.0,
         is_admin BOOLEAN DEFAULT FALSE
-    )
-    ''')
+    )''')
     
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS vehicles (
@@ -27,9 +27,9 @@ def init_db():
         reserve_price REAL NOT NULL,
         end_time TEXT NOT NULL,
         seller_id INTEGER NOT NULL,
+        status TEXT DEFAULT 'active',
         FOREIGN KEY (seller_id) REFERENCES users(id)
-    )
-    ''')
+    )''')
     
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS bids (
@@ -40,8 +40,7 @@ def init_db():
         vehicle_id INTEGER NOT NULL,
         FOREIGN KEY (bidder_id) REFERENCES users(id),
         FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
-    )
-    ''')
+    )''')
     
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS notifications (
@@ -51,16 +50,16 @@ def init_db():
         time TEXT NOT NULL,
         is_read BOOLEAN DEFAULT FALSE,
         FOREIGN KEY (user_id) REFERENCES users(id)
-    )
-    ''')
+    )''')
     
-    # Create admin user if not exists
+    # Create admin user
+    admin_pass = hashlib.sha256('admin123'.encode()).hexdigest()
     cursor.execute("SELECT * FROM users WHERE username='admin'")
     if not cursor.fetchone():
-        cursor.execute('''
-        INSERT INTO users (username, password, email, is_admin)
-        VALUES (?, ?, ?, ?)
-        ''', ('admin', 'admin123', 'admin@auction.com', True))
+        cursor.execute('''INSERT INTO users 
+                       (username, password, email, is_admin)
+                       VALUES (?, ?, ?, ?)''',
+                     ('admin', admin_pass, 'admin@auction.com', True))
     
     conn.commit()
     conn.close()
