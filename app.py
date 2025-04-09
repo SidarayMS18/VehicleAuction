@@ -1,27 +1,29 @@
-from flask import Flask, send_from_directory
-from flask_cors import CORS
-from api import api  # Import your Blueprint
-import os
+# app.py
+from flask import Flask, render_template, session
+from database import init_db
+from api import api
 
-app = Flask(__name__, static_folder='.', template_folder='.')
-CORS(app)
+app = Flask(__name__)
+app.secret_key = 'your-secure-secret-key'  # Change this for production
 
-# Secret key for session management
-app.secret_key = 'your-secret-key-here'  # Change this to a secure random key in production
+# Initialize the database
+init_db()
 
-# Register the API blueprint
+# Register API blueprint with prefix '/api'
 app.register_blueprint(api, url_prefix='/api')
 
-# Serve index.html on root
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')
-
-# Serve other static files
-@app.route('/<path:filename>')
-def serve_static(filename):
-    return send_from_directory('.', filename)
+    """Serve the main Vue.js template."""
+    current_user = None
+    # Since notifications are loaded via the API, we only send user info here.
+    if 'user_id' in session:
+        current_user = {
+            'id': session['user_id'],
+            'username': session.get('username'),
+            'is_admin': session.get('is_admin', False)
+        }
+    return render_template('index.html', currentUser=current_user)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
-
+    app.run(debug=True)
